@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monster Slayer</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/tailwindcss@2.1.2/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/vue@next" defer></script>
+    <script src="app.js" defer></script>
+    <style>
+        html {
+            font-size: 14px;
+        }
+        body {
+            background: #384251;
+            background: -webkit-radial-gradient(center, #384251, #000000);
+            background: -moz-radial-gradient(center, #384251, #000000);
+            background: radial-gradient(ellipse at center, #384251, #000000);     
+            font-family: 'Fredoka One', cursive;
+            letter-spacing: 0.1ch;
+        }      
+        
+        @media screen and (min-width: 600px) {
+            html {
+                font-size: 16px;
+            }
+        }
+
+        @media screen and (min-width: 1400px) {
+            html {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body class="relative h-screen">
+    <div id="game" class="flex flex-col h-screen">
+        <header class="w-full p-4 text-center text-white border-b border-gray-700">
+            <h1 class="text-4xl">
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-blue-500">Cute Monster Battle</span>
+            </h1>
+        </header>
+        <main class="w-full flex flex-wrap flex-grow">
+            <div class="flex flex-col flex-grow p-8 lg:order-2">
+                <div class="flex items-center text-white">
+                    <div class="relative w-1/2 -mr-1">
+                        <h2 class="hidden sm:block uppercase text-sm sm:text-base text-left">Your Health <span class="text-sm text-gray-100">({{ playerHealthPercentage }})</span></h2>
+                        <div class="relative w-full h-4 mt-1 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500">
+                            <div class="absolute top-0 right-0 h-full bg-gray-700" :style="playerBarStyles"></div>
+                        </div> 
+                    </div>
+                    <div class="relative z-10">
+                        <div class="hidden sm:block text-center text-gray-100 text-sm font-medium">Round</div>
+                        <div class="flex justify-center items-center w-12 h-12 p-2 shadow rounded-full bg-gray-600 text-gray-100 text-xl text-center">{{ currentRound }}</div>                        
+                    </div>
+                    <div class="relative w-1/2 -ml-1">
+                        <h2 class="hidden sm:block uppercase text-sm sm:text-base text-right"><span class="text-sm text-gray-100">({{ monsterHealthPercentage }})</span> Opponent’s Health</h2>
+                        <div class="relative w-full h-4 mt-1 bg-gradient-to-l from-red-500 via-yellow-500 to-green-500">
+                            <div class="absolute top-0 left-0 h-full bg-gray-700" :style="monsterBarStyles"></div>
+                        </div>                    
+                    </div>
+                </div>
+                <div class="flex flex-col justify-around">
+                    <div class="flex items-center p-10">
+                        <div class="w-1/2 pr-2" v-if="winner !== 'monster'">
+                            <img :src="playerImage" alt="" :class="playerClasses" :style="playerStyles">
+                        </div>
+                        <div class="w-1/2 text-white text-center animate__animated animate__zoomInUp" v-if="winner">
+                            <h2 class="text-4xl">Game Over</h2>
+                            <p class="mt-2 text-2xl">
+                                <span v-if="winner === 'monster'">You Lost!</span>
+                                <span v-else-if="winner === 'player'">You Won!</span>
+                                <span v-else>It's a draw!</span>
+                            </p>
+                            <p class="mt-4">
+                                <button class="rounded px-4 py-2 uppercase text-sm font-medium bg-purple-500 text-white hover:bg-purple-700" @click="startNewGame">Start New Game</button>
+                            </p>
+                        </div>                         
+                        <div class="w-1/2 pl-2" v-if="winner !== 'player'">
+                            <img :src="monsterImage" alt="" :class="monsterClasses" :style="monsterStyles">
+                        </div>
+                    </div>
+                    <div class="pt-10" v-if="!winner">
+                        <div class="flex flex-wrap justify-center">
+                            <div class="w-1/2 xl:w-1/4 p-2">
+                                <button class="w-full rounded px-4 py-2 uppercase text-sm font-medium bg-blue-500 text-white hover:bg-blue-700" @click="attackMonster">Attack</button>
+                            </div>
+                            <div class="w-1/2 xl:w-1/4 p-2" v-if="mayUseSpecialAttack">
+                                <button class="w-full rounded px-4 py-2 uppercase text-sm font-medium bg-red-500 text-white hover:bg-red-700" @click="specialAttackMonster">Special Attack</button>
+                            </div>
+                            <div class="w-1/2 xl:w-1/4 p-2">
+                                <button class="w-full rounded px-4 py-2 uppercase text-sm font-medium bg-green-500 text-white hover:bg-green-700" @click="healPlayer">Heal</button>
+                            </div>
+                            <div class="w-1/2 xl:w-1/4 p-2">
+                                <button class="w-full rounded px-4 py-2 uppercase text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-700" @click="surrender">Surrender</button>
+                            </div>
+                        </div>
+                    </div>  
+                </div>
+            </div>
+            <div class="w-1/2 lg:w-1/6 p-4 text-gray-200 border-r border-t lg:border-t-0 border-gray-700 lg:order-1">
+                <h2 class="pb-2  text-sm text-center border-b border-gray-700">Your Move Log</h2>
+                <div class="flex justify-center mt-2">
+                    <ol class="text-sm">
+                        <li v-for="message in playerLogMessages">{{ message.actionType }} ({{ message.actionValue }})</li>
+                    </ol>
+                </div>
+            </div>          
+            <div class="w-1/2 lg:w-1/6 p-4 text-gray-200 lg:border-l border-t lg:border-t-0 border-gray-700 lg:order-3">
+                <h2 class="pb-2  text-sm text-center border-b border-gray-700">Opponent’s Move Log</h2>
+                <div class="flex justify-center mt-2">
+                    <ol class="text-sm">
+                        <li v-for="message in monsterLogMessages">{{ message.actionType }} ({{ message.actionValue }})</li>
+                    </ol>
+                </div>
+            </div>                      
+        </main>   
+    </div>
+</body>
+</html>
